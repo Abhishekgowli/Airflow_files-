@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.google.cloud.operators.dataproc import (
     DataprocCreateClusterOperator,
-    DataprocSubmitPySparkJobOperator,
     DataprocDeleteClusterOperator
 )
 from airflow.utils.dates import days_ago
+from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator
 
 
 default_args = {
@@ -70,15 +70,38 @@ create_cluster = DataprocCreateClusterOperator(
 #     'spark.driver.cores' : '2'
 # }
 
-submit_pyspark_job = DataprocSubmitPySparkJobOperator(
+#submit_pyspark_job = DataprocSubmitPySparkJobOperator(
+    #task_id='submit_pyspark_job_on_dataproc',
+    #main='gs://airflow-project-exciess/Project-1/spark-job/emp_job_sp.py',
+    #cluster_name=CLUSTER_NAME,
+    #region=REGION,
+    #project_id=PROJECT_ID,
+    # dataproc_pyspark_properties=spark_job_resources_parm,
+    #dag=dag,
+#)
+
+
+
+
+submit_pyspark_job = DataprocSubmitJobOperator(
     task_id='submit_pyspark_job_on_dataproc',
-    main='gs://airflow-project-exciess/Project-1/spark-job/emp_job_sp.py',
-    cluster_name=CLUSTER_NAME,
+    job={
+        "placement": {"cluster_name": CLUSTER_NAME},
+        "pyspark_job": {
+            "main_python_file_uri": "gs://airflow-project-exciess/Project-1/spark-job/emp_job_sp.py",
+            # "properties": spark_job_resources_parm,  # Uncomment if needed
+        },
+    },
     region=REGION,
     project_id=PROJECT_ID,
-    # dataproc_pyspark_properties=spark_job_resources_parm,
     dag=dag,
 )
+
+
+
+
+
+
 
 delete_cluster = DataprocDeleteClusterOperator(
     task_id='delete_dataproc_cluster',
