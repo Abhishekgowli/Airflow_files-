@@ -6,6 +6,8 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 from airflow.models.param import Param
+from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator
+
 
 
 
@@ -83,15 +85,34 @@ REGION = config['REGION']
 
 pyspark_job_file_path = 'gs://airflow-project-exciess/Project-2/spark-code/spark_code.py'
 
-submit_pyspark_job = DataprocSubmitPySparkJobOperator(
+#submit_pyspark_job = DataprocSubmitPySparkJobOperator(
+    #task_id='submit_pyspark_job',
+    #main=pyspark_job_file_path,
+    #arguments=['--date={{ ti.xcom_pull(task_ids=\'get_execution_date\') }}'],  # Passing date as an argument to the PySpark script
+    #cluster_name=CLUSTER_NAME,
+    #region=REGION,
+    #project_id=PROJECT_ID,
+    #dag=dag,
+#)
+
+submit_pyspark_job = DataprocSubmitJobOperator(
     task_id='submit_pyspark_job',
-    main=pyspark_job_file_path,
-    arguments=['--date={{ ti.xcom_pull(task_ids=\'get_execution_date\') }}'],  # Passing date as an argument to the PySpark script
-    cluster_name=CLUSTER_NAME,
+    job={
+        "reference": {"project_id": PROJECT_ID},
+        "placement": {"cluster_name": CLUSTER_NAME},
+        "pyspark_job": {
+            "main_python_file_uri": pyspark_job_file_path,
+            "args": ["--date={{ ti.xcom_pull(task_ids='get_execution_date') }}"]
+        },
+    },
     region=REGION,
     project_id=PROJECT_ID,
     dag=dag,
 )
+
+
+
+
 
 # Set the task dependencies
 get_execution_date_task >> submit_pyspark_job
